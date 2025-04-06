@@ -1,0 +1,7 @@
+package-lock.json
+.terraform.lock.hcl
+.terraform
+terraform.tfstate
+uploads
+uploads/*
+*.csv
