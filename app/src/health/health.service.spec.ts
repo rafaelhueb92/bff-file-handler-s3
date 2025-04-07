@@ -1,8 +1,7 @@
-// health.service.spec.ts
 import { HealthService } from './health.service';
 import * as os from 'os';
 import { statfs } from 'fs/promises';
-import { RequestContextService } from '../common/request-context-module/request-context.service';
+import { ContextService } from '../common/context-module/context.service';
 
 jest.mock('os');
 jest.mock('fs/promises', () => ({
@@ -11,7 +10,7 @@ jest.mock('fs/promises', () => ({
 
 describe('HealthService', () => {
   let healthService: HealthService;
-  let mockRequestContext: RequestContextService;
+  let mockRequestContext: ContextService;
 
   beforeEach(() => {
     mockRequestContext = {} as any;

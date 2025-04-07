@@ -4,7 +4,7 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { S3Service } from '../aws/s3/s3.service';
+import { S3Service } from '../common/aws/s3/s3.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('files')

@@ -1,5 +1,3 @@
-// test/system-usage-limit.interceptor.spec.ts
-
 import { SystemUsageLimitInterceptor } from './system-usage-limit.interceptor';
 import { HealthService } from '../../../health/health.service';
 import { ExecutionContext, CallHandler } from '@nestjs/common';

@@ -1,11 +1,11 @@
-import { RequestContextService } from './request-context.service';
-import { RequestWithId } from '../../common/interfaces/request-with-id.interface';
+import { ContextService } from './context.service';
+import { RequestWithId } from '../interfaces/request-with-id.interface';
 
-describe('RequestContextService', () => {
-  let service: RequestContextService;
+describe('ContextService', () => {
+  let service: ContextService;
 
   beforeEach(() => {
-    service = new RequestContextService();
+    service = new ContextService();
   });
 
   it('should set and get values within the same context', (done) => {

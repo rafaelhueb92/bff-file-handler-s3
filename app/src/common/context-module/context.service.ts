@@ -1,10 +1,9 @@
-// common/context/request-context.service.ts
 import { Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { RequestWithId } from '../interfaces/request-with-id.interface';
 
 @Injectable()
-export class RequestContextService {
+export class ContextService {
   private readonly storage = new AsyncLocalStorage<Map<string, any>>();
 
   run(request: RequestWithId, callback: () => void) {

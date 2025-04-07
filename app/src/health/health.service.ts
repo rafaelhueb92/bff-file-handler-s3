@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import * as os from 'os';
 import { statfs } from 'fs/promises';
-import { RequestContextService } from '../common/request-context-module/request-context.service';
+import { S3Service } from '../common/aws/s3/s3.service';
+import { LoggerService } from '../common/logger/logger.service';
 
 @Injectable()
 export class HealthService {
   private lastCheck = Date.now();
   private tokens = 10;
 
-  constructor(private readonly requestContext: RequestContextService) {}
+  constructor(
+    private readonly s3Service: S3Service,
+    private readonly loggerService: LoggerService,
+  ) {}
 
   private memoryInMB(mem: number): string {
     return `${(mem / 1024 / 1024).toFixed(2)} MB`;
@@ -19,25 +23,17 @@ export class HealthService {
   }
 
   async getFreeSpaceDisk(): Promise<number> {
-    try {
-      const { bavail, bsize } = await statfs('/');
-      const space = bavail * bsize;
-      return space;
-    } catch (error) {
-      throw error;
-    }
+    const { bavail, bsize } = await statfs('/');
+    const space = bavail * bsize;
+    return Promise.resolve(space);
   }
 
   async getCpuRatio(): Promise<number> {
-    try {
-      const cpuCount = os.cpus().length;
-      const loadAvg = os.loadavg()[0];
-      const ratio = loadAvg / cpuCount;
+    const cpuCount = os.cpus().length;
+    const loadAvg = os.loadavg()[0];
+    const ratio = loadAvg / cpuCount;
 
-      return Promise.resolve(ratio);
-    } catch (error) {
-      throw error;
-    }
+    return Promise.resolve(ratio);
   }
 
   async getMemUsage(): Promise<number> {
@@ -46,14 +42,14 @@ export class HealthService {
       const freeMem = os.freemem();
       const usage = (totalMem - freeMem) / totalMem;
 
-      console.info('Memory usage calculated', {
+      this.loggerService.info('Memory usage calculated', {
         context: 'HealthService',
         result: { usage },
       });
 
       return Promise.resolve(usage);
     } catch (error) {
-      console.error('Error calculating memory usage', {
+      this.loggerService.error('Error calculating memory usage', {
         context: 'HealthService',
         error: (error as Error).message,
       });
@@ -85,7 +81,7 @@ export class HealthService {
         this.tokens -= 1;
       }
 
-      console.info('Token bucket updated', {
+      this.loggerService.info('Token bucket updated', {
         result: {
           allowed,
           tokens: this.tokens,
@@ -95,7 +91,7 @@ export class HealthService {
 
       return allowed;
     } catch (error) {
-      console.error('Error checking allowRequest', {
+      this.loggerService.error('Error checking allowRequest', {
         error: (error as Error).message,
       });
       throw error;
@@ -110,10 +106,17 @@ export class HealthService {
         showMetrics ? this.getFreeSpaceDisk() : Promise.resolve(0),
       ]);
 
-      const healthy = await this.allowRequest(cpuRatio, memUsage);
+      const [healthyService, bucketHealth] = await Promise.all([
+        this.allowRequest(cpuRatio, memUsage),
+        this.s3Service.checkBucketHealth(),
+      ]);
 
       const result = {
-        healthy,
+        ...{
+          healthy: healthyService && bucketHealth,
+          healthyService,
+          bucketHealth,
+        },
         ...(showMetrics && {
           cpuRatio: cpuRatio.toFixed(2),
           memUsage: this.toPercentage(memUsage),
@@ -124,14 +127,14 @@ export class HealthService {
         }),
       };
 
-      console.info('Health check performed', {
+      this.loggerService.info('Health check performed', {
         context: 'HealthService',
         result,
       });
 
       return result;
     } catch (error) {
-      console.error('Error in health check', {
+      this.loggerService.error('Error in health check', {
         context: 'HealthService',
         error: (error as Error).message,
       });

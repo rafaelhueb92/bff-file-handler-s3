@@ -1,5 +1,3 @@
-// test/rate-limit.interceptor.spec.ts
-
 import { RateLimitInterceptor } from './rate-limit.interceptor';
 import {
   CallHandler,
