@@ -100,4 +100,4 @@ The following features are planned for future releases:
 
 - This MVP is designed to validate the core functionality of the BFF Handler S3.
 - Future iterations will focus on scalability, security, and automation.
-- Contributions and feedback are welcome!
+- This project will be an article.
