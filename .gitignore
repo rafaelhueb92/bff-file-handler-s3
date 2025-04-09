@@ -5,3 +5,5 @@ terraform.tfstate
 uploads
 uploads/*
 *.csv
+terraform.tfstate.backup
+.DS_Store

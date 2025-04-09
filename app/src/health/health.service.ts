@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as os from 'os';
 import { statfs } from 'fs/promises';
-import { S3Service } from '../common/aws/s3/s3.service';
 import { LoggerService } from '../common/logger/logger.service';
+import { S3ServiceCB } from '../common/aws/s3/s3.service.cb';
 
 @Injectable()
 export class HealthService {
@@ -10,7 +10,7 @@ export class HealthService {
   private tokens = 10;
 
   constructor(
-    private readonly s3Service: S3Service,
+    private readonly s3Service: S3ServiceCB,
     private readonly loggerService: LoggerService,
   ) {}
 
@@ -98,7 +98,7 @@ export class HealthService {
     }
   }
 
-  async check(showMetrics: boolean = true): Promise<any> {
+  async check(showMetrics: boolean = true): Promise<HealthCheckResult> {
     try {
       const [cpuRatio, memUsage, freeSpaceDisk] = await Promise.all([
         this.getCpuRatio(),

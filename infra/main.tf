@@ -1,106 +1,71 @@
-resource "aws_s3_bucket" "main" {
-  bucket   = local.bucket_main
+terraform {
 
-  lifecycle {
-    prevent_destroy = true
+  backend "s3" {
+    bucket         = "bff-handler-terraform-state-180294221572"
+    key            = "bff-handler/terraform.tfstate"
+    region         = "us-west-2"
+    encrypt        = true
+    dynamodb_table = "bff-handler-terraform-state-lock"
   }
 }
 
-resource "aws_s3_bucket" "fallback" {
-  bucket   = local.bucket_fallback
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "aws_s3_bucket_versioning" "versioning_main" {
-  bucket = aws_s3_bucket.main.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_versioning" "versioning_fallback" {
-  bucket = aws_s3_bucket.fallback.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-
-resource "aws_iam_role" "replication" {
-  name = "s3-replication-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect    = "Allow",
-        Principal = {
-          Service = "s3.amazonaws.com"
-        },
-        Action    = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "replication_policy" {
-  name = "s3-replication-policy"
-  role = aws_iam_role.replication.id
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect   = "Allow",
-        Action   = [
-          "s3:GetReplicationConfiguration",
-          "s3:ListBucket"
-        ],
-        Resource = aws_s3_bucket.main.arn
-      },
-      {
-        Effect   = "Allow",
-        Action   = [
-          "s3:GetObjectVersion",
-          "s3:GetObjectVersionAcl"
-        ],
-        Resource = "${aws_s3_bucket.main.arn}/*"
-      },
-      {
-        Effect   = "Allow",
-        Action   = [
-          "s3:ReplicateObject",
-          "s3:ReplicateDelete",
-          "s3:ReplicateTags"
-        ],
-        Resource = "${aws_s3_bucket.fallback.arn}/*"
-      }
-    ]
-  })
-}
-
-resource "aws_s3_bucket_replication_configuration" "replication" {
-  bucket   = aws_s3_bucket.main.id
-  role     = aws_iam_role.replication.arn
-
-  rule {
-    id     = "main-to-fallback"
-    status = "Enabled"
-
-    delete_marker_replication {
-      status = "Disabled"
-    }
-
-    destination {
-      bucket        = aws_s3_bucket.fallback.arn
-      storage_class = "STANDARD"
-    }
-
-    filter {
-      prefix = ""
+provider "aws" {
+  default_tags {
+    tags = {
+      Environment = var.environment
+      Project     = var.project_name
+      ManagedBy   = "Terraform"
     }
   }
+}
+
+module "networking" {
+  source = "./modules/networking"
+
+  project_name = var.project_name
+  environment  = var.environment
+  vpc_cidr     = var.vpc_cidr
+}
+
+module "s3" {
+  source = "./modules/s3"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+module "alb" {
+  source = "./modules/alb"
+
+  project_name      = var.project_name
+  environment       = var.environment
+  vpc_id           = module.networking.vpc_id
+  public_subnet_ids = module.networking.public_subnet_ids
+  container_port    = 3000
+  health_check_path = "/health"
+  
+  depends_on = [module.networking]
+}
+
+module "ecs" {
+  source = "./modules/ecs"
+
+  project_name            = var.project_name
+  environment            = var.environment
+  vpc_id                 = module.networking.vpc_id
+  private_subnet_ids     = module.networking.private_subnet_ids
+  app_user               = var.app_user
+  app_password           = var.app_password
+  main_bucket_name       = module.s3.main_bucket_name
+  fallback_bucket_name   = module.s3.fallback_bucket_name
+  target_group_arn       = module.alb.target_group_arn
+  s3_retry_attempts      = var.s3_retry_attempts
+  s3_fallback_retry_attempts = var.s3_fallback_retry_attempts
+  s3_timeout            = var.s3_timeout
+  s3_conn_timeout       = var.s3_conn_timeout
+  cb_timeout            = var.cb_timeout
+  cb_threshold          = var.cb_threshold
+  cb_reset_timeout      = var.cb_reset_timeout
+  
+  depends_on = [module.networking, module.alb, module.s3]
 }

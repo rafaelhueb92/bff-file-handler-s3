@@ -1,45 +1,133 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { ContextService } from './context.service';
 import { RequestWithId } from '../interfaces/request-with-id.interface';
 
 describe('ContextService', () => {
   let service: ContextService;
+  let currentStore: Map<string, any> | null = null;
 
-  beforeEach(() => {
-    service = new ContextService();
+  // Mock AsyncLocalStorage with proper context handling
+  const mockAsyncLocalStorage = {
+    run: jest.fn((store, callback) => {
+      const previousStore = currentStore;
+      currentStore = store;
+      try {
+        return callback();
+      } finally {
+        currentStore = previousStore;
+      }
+    }),
+    getStore: jest.fn(() => currentStore),
+  };
+
+  jest.mock('async_hooks', () => ({
+    AsyncLocalStorage: jest
+      .fn()
+      .mockImplementation(() => mockAsyncLocalStorage),
+  }));
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [ContextService],
+    }).compile();
+
+    service = module.get<ContextService>(ContextService);
+    // Reset the store before each test
+    currentStore = null;
   });
 
-  it('should set and get values within the same context', (done) => {
-    const mockRequest = { id: 'req-123' } as RequestWithId;
+  afterEach(() => {
+    jest.clearAllMocks();
+    currentStore = null;
+  });
 
-    service.run(mockRequest, () => {
-      service.set('userId', 42);
+  describe('run', () => {
+    it('should create a new store and run the callback', () => {
+      const mockRequest: RequestWithId = {
+        id: 'test-id',
+        ip: '127.0.0.1',
+      };
+      const mockCallback = jest.fn();
 
-      const userId = service.get('userId');
-      expect(userId).toBe(42);
-      done();
+      service.run(mockRequest, mockCallback);
+
+      expect(mockCallback).toHaveBeenCalled();
     });
   });
 
-  it('should return undefined if key is not set', (done) => {
-    const mockRequest = { id: 'req-456' } as RequestWithId;
+  describe('set', () => {
+    it('should set value in store when store exists', () => {
+      service.run({} as RequestWithId, () => {
+        service.set('testKey', 'testValue');
+        expect(service.get('testKey')).toBe('testValue');
+      });
+    });
 
-    service.run(mockRequest, () => {
-      const value = service.get('nonexistent');
+    it('should not throw when store does not exist', () => {
+      expect(() => {
+        service.set('testKey', 'testValue');
+      }).not.toThrow();
+    });
+
+    it('should handle different value types', () => {
+      service.run({} as RequestWithId, () => {
+        service.set('stringKey', 'string');
+        service.set('numberKey', 123);
+        service.set('objectKey', { test: 'value' });
+        service.set('arrayKey', [1, 2, 3]);
+        service.set('booleanKey', true);
+
+        expect(service.get('stringKey')).toBe('string');
+        expect(service.get('numberKey')).toBe(123);
+        expect(service.get('objectKey')).toEqual({ test: 'value' });
+        expect(service.get('arrayKey')).toEqual([1, 2, 3]);
+        expect(service.get('booleanKey')).toBe(true);
+      });
+    });
+  });
+
+  describe('get', () => {
+    it('should get value from store when store exists', () => {
+      service.run({} as RequestWithId, () => {
+        service.set('testKey', 'testValue');
+        expect(service.get('testKey')).toBe('testValue');
+      });
+    });
+
+    it('should return undefined when store does not exist', () => {
+      const value = service.get('testKey');
       expect(value).toBeUndefined();
-      done();
+    });
+
+    it('should return undefined when key does not exist', () => {
+      service.run({} as RequestWithId, () => {
+        const value = service.get('nonExistentKey');
+        expect(value).toBeUndefined();
+      });
     });
   });
 
-  it('should not share context between runs', (done) => {
-    const mockRequest1 = { id: 'req-1' } as RequestWithId;
-    const mockRequest2 = { id: 'req-2' } as RequestWithId;
+  describe('integration', () => {
+    it('should maintain context throughout the execution', () => {
+      service.run({} as RequestWithId, () => {
+        service.set('key1', 'value1');
+        service.set('key2', 'value2');
 
-    service.run(mockRequest1, () => {
-      service.set('key', 'value1');
+        expect(service.get('key1')).toBe('value1');
+        expect(service.get('key2')).toBe('value2');
+      });
+    });
 
-      service.run(mockRequest2, () => {
+    it('should isolate context between different runs', () => {
+      service.run({} as RequestWithId, () => {
+        service.set('key', 'value1');
+        expect(service.get('key')).toBe('value1');
+      });
+
+      service.run({} as RequestWithId, () => {
         expect(service.get('key')).toBeUndefined();
-        done();
+        service.set('key', 'value2');
+        expect(service.get('key')).toBe('value2');
       });
     });
   });
