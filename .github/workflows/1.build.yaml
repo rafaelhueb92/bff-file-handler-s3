@@ -31,9 +31,6 @@ jobs:
       
       - name: Run End-to-End Tests
         run: npm run test:e2e
-
-      - name: Generate Test Coverage
-        run: npm run test:coverage
         
       - name: Cache Node Modules
         uses: actions/cache@v3
