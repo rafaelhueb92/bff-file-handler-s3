@@ -19,12 +19,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '23'
+          node-version: '22'
           cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
+          cache-dependency-path: 'app/package-lock.json'
       
-      - name: Install Dev Dependencies
-        run: npm install --only=dev
+      - name: Install Dependencies
+        run: npm ci
       
       - name: Run Unit Tests
         run: npm run test
@@ -35,7 +35,7 @@ jobs:
       - name: Cache Node Modules
         uses: actions/cache@v3
         with:
-          path: app/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('app/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
