@@ -37,17 +37,34 @@ resource "null_resource" "docker_build_push" {
 
   provisioner "local-exec" {
     command = <<EOF
-      # Login to ECR
-      aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.app_repo.repository_url}
+      aws configure list
 
-      # Build Docker image
+      AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      echo "AWS Account ID: $AWS_ACCOUNT_ID"
+
+      echo "Logging in to ECR..."
+      aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.${var.aws_region}.amazonaws.com
+
+      if [ $? -ne 0 ]; then
+        echo "Failed to login to ECR"
+        exit 1
+      fi
+
+      echo "Building Docker image..."
       cd ${path.module}/../../app && docker build -t ${aws_ecr_repository.app_repo.repository_url}:latest .
 
-      # Alternativa usando -f flag:
-      # docker build -t ${aws_ecr_repository.app_repo.repository_url}:latest -f ${path.module}/../../app/Dockerfile ${path.module}/../../app
+      if [ $? -ne 0 ]; then
+        echo "Failed to build Docker image"
+        exit 1
+      fi
 
-      # Push Docker image
+      echo "Pushing Docker image..."
       docker push ${aws_ecr_repository.app_repo.repository_url}:latest
+
+      if [ $? -ne 0 ]; then
+        echo "Failed to push Docker image"
+        exit 1
+      fi
     EOF
   }
 
