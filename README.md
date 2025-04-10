@@ -22,6 +22,7 @@ When a **pull request** is created or merged into the `main` branch, the followi
 1. **Run Tests**: Executes all unit and integration tests to ensure the application is functioning as expected.
 2. **Deploy Infrastructure**: Uses Terraform to deploy the infrastructure to the cloud.
 3. **Deploy Application**: Builds and deploys the NestJS application to the target environment.
+4. **Create a Backend Bucket**: Create before a backend bucket for the tf state called backend-tf-${YOUR-AWS-ACCOUNT-ID}
 
 ### **Required GitHub Secrets**
 
