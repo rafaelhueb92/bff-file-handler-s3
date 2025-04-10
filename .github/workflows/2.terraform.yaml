@@ -46,6 +46,10 @@ jobs:
           # Export for later steps
           echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
           echo "TF_VAR_project_name=$PROJECT_NAME" >> $GITHUB_ENV
+          
+          # Export APP credentials from secrets
+          echo "TF_VAR_app_user=${{ secrets.APP_USER }}" >> $GITHUB_ENV
+          echo "TF_VAR_app_password=${{ secrets.APP_PASSWORD }}" >> $GITHUB_ENV
 
       - name: Delete ECR Images (Before Destroy)
         if: ${{ secrets.DESTROY_FLAG == 'true' }}
@@ -97,6 +101,8 @@ jobs:
           fi
         env:
           TF_VAR_ecr_image_tag: ${{ env.IMAGE_TAG }}
+          TF_VAR_app_user: ${{ secrets.APP_USER }}
+          TF_VAR_app_password: ${{ secrets.APP_PASSWORD }}
 
       - name: Terraform Apply/Destroy
         working-directory: ./terraform
@@ -106,3 +112,6 @@ jobs:
           else
             terraform apply --auto-approve tfplan
           fi
+        env:
+          TF_VAR_app_user: ${{ secrets.APP_USER }}
+          TF_VAR_app_password: ${{ secrets.APP_PASSWORD }}

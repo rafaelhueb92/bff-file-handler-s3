@@ -23,6 +23,15 @@ When a **pull request** is created or merged into the `main` branch, the followi
 2. **Deploy Infrastructure**: Uses Terraform to deploy the infrastructure to the cloud.
 3. **Deploy Application**: Builds and deploys the NestJS application to the target environment.
 
+### **Required GitHub Secrets**
+
+To run the pipeline in GitHub Actions, the following secrets must be configured:
+
+- **`AWS_ACCESS_KEY_ID`**: AWS access key for deploying infrastructure and accessing S3.
+- **`AWS_SECRET_ACCESS_KEY`**: AWS secret key for deploying infrastructure and accessing S3.
+- **`APP_USER`**: Username for Basic Authentication in the application.
+- **`APP_PASSWORD`**: Password for Basic Authentication in the application.
+
 ---
 
 ## 📂 Project Structure
@@ -65,7 +74,7 @@ This section explains the available API endpoints and their functionality:
 
 - **Purpose**: Checks the health of the server and the S3 bucket service.
 - **Authentication**: Requires **Basic Auth**.
-- **Response**: Returns the status of the server and the bucket service,
+- **Response**: Returns the status of the server and the bucket service.
 - **Example**:
   ```json
   {
@@ -87,7 +96,7 @@ This section explains the available API endpoints and their functionality:
 
 - **Purpose**: Used for **Application Load Balancer (ALB)** health checks.
 - **Authentication**: **No authentication required**.
-- **Response**: Returns a simple status indicating the server is running, for ALB health check
+- **Response**: Returns a simple status indicating the server is running, for ALB health check.
 - **Example**:
   ```json
   true
@@ -98,7 +107,7 @@ This section explains the available API endpoints and their functionality:
 ### **3. `/files/upload`**
 
 - **Purpose**: Uploads a file to the S3 bucket. If the file size exceeds **50 MB**, the application will perform an **asynchronous multipart upload**.
-  If for some reason, the upload fails, it will try to upload to the fallback bucket, only will be unvailable, if all buckets fails.
+  If for some reason, the upload fails, it will try to upload to the fallback bucket. The upload will only fail if all buckets are unavailable.
 - **Authentication**: Requires **Basic Auth**.
 - **Request Body**:
   - The request must be a **multipart form-data** with a `file` field containing the file to upload.
@@ -218,3 +227,5 @@ The API endpoints are documented in the `insomnia/` folder. Import the provided 
 
 - **LocalStack Integration**: Automatically configure and use LocalStack for local development.
 - **Bucket Management**: Create and manage buckets dynamically in the development environment.
+
+---
