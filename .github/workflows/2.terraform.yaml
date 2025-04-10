@@ -32,25 +32,7 @@ jobs:
 
       - name: Check Docker Version
         run: docker --version
-
-      - name: Parse config.yaml and Set Environment Variables
-        run: |
-          # Install yq to parse YAML
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod a+x /usr/local/bin/yq
-          
-          # Read values from config.yaml
-          export REPOSITORY_NAME=$(yq eval '.repository_name' config.yaml)
-          export PROJECT_NAME=$(yq eval '.project' config.yaml)
-          
-          # Export for later steps
-          echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
-          echo "TF_VAR_project_name=$PROJECT_NAME" >> $GITHUB_ENV
-          
-          # Export APP credentials from secrets
-          echo "TF_VAR_app_user=${{ secrets.APP_USER }}" >> $GITHUB_ENV
-          echo "TF_VAR_app_password=${{ secrets.APP_PASSWORD }}" >> $GITHUB_ENV
-     
+      
       - name: Read destroy.yaml and check if destroy=true
         id: check_destroy
         run: |
@@ -64,6 +46,16 @@ jobs:
             echo "destroy_triggered=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Parse config.yaml and Set Environment Variables
+        run: |
+          PROJECT_NAME=$(grep 'project:' ../config.yaml | awk '{print $2}')
+
+          echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
+          echo "TF_VAR_project_name=$PROJECT_NAME" >> $GITHUB_ENV
+          
+          echo "TF_VAR_app_user=${{ secrets.APP_USER }}" >> $GITHUB_ENV
+          echo "TF_VAR_app_password=${{ secrets.APP_PASSWORD }}" >> $GITHUB_ENV
+     
       - name: Create Backend State
         run: bash backend-create.sh
         working-directory: ./terraform
