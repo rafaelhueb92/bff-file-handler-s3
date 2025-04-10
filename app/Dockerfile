@@ -36,8 +36,6 @@ ENV NODE_ENV=production \
 
 USER nestjs
 
-ENTRYPOINT ["/sbin/tini", "--"]
-
 CMD ["node", "dist/main"]
 
 EXPOSE ${PORT}
