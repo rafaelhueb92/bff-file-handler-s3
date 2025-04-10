@@ -1,0 +1,108 @@
+name: Deploy Terraform Infrastructure
+
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
+
+jobs:
+  terraform:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    
+    env:
+      AWS_REGION: us-east-1
+      TF_WORKSPACE: development
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check Docker Version
+        run: docker --version
+
+      - name: Parse config.yaml and Set Environment Variables
+        run: |
+          # Install yq to parse YAML
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod a+x /usr/local/bin/yq
+          
+          # Read values from config.yaml
+          export REPOSITORY_NAME=$(yq eval '.repository_name' config.yaml)
+          export PROJECT_NAME=$(yq eval '.project' config.yaml)
+          
+          # Export for later steps
+          echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
+          echo "TF_VAR_project_name=$PROJECT_NAME" >> $GITHUB_ENV
+
+      - name: Delete ECR Images (Before Destroy)
+        if: ${{ secrets.DESTROY_FLAG == 'true' }}
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          REPOSITORY_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY_NAME}"
+          
+          # Login to ECR
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REPOSITORY_URL
+          
+          # Get and delete images
+          IMAGES=$(aws ecr list-images --repository-name $REPOSITORY_NAME --region $AWS_REGION --query 'imageIds[*]' --output json)
+          if [ "$IMAGES" != "[]" ]; then
+            echo "Deleting images from repository $REPOSITORY_NAME..."
+            aws ecr batch-delete-image --repository-name $REPOSITORY_NAME --region $AWS_REGION --image-ids "$IMAGES"
+            echo "Images deleted successfully."
+          else
+            echo "No images to delete in repository $REPOSITORY_NAME."
+          fi
+
+      - name: Create Backend State
+        run: bash scripts/backend-create.sh
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.5.0"
+
+      - name: Terraform Format
+        working-directory: ./terraform
+        run: terraform fmt -check
+        continue-on-error: true
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: ./terraform
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        run: |
+          if [ "${{ secrets.DESTROY_FLAG }}" == "true" ]; then
+            terraform plan -destroy -out=tfplan
+          else
+            terraform plan -out=tfplan
+          fi
+        env:
+          TF_VAR_ecr_image_tag: ${{ env.IMAGE_TAG }}
+
+      - name: Terraform Apply/Destroy
+        working-directory: ./terraform
+        run: |
+          if [ "${{ secrets.DESTROY_FLAG }}" == "true" ]; then
+            terraform destroy --auto-approve
+          else
+            terraform apply --auto-approve tfplan
+          fi

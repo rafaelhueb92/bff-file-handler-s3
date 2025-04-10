@@ -8,3 +8,4 @@ uploads/*
 terraform.tfstate.backup
 .DS_Store
 infra/terraform.tfvars
+tmp

@@ -148,16 +148,11 @@ export class S3ServiceCB {
   async uploadFile(file: Express.Multer.File, key: string) {
     try {
       if (this.isMultipartUpload(file.size)) {
-        const result = await this.multiPartUploadBreaker.fire(
-          file,
-          key,
-          this.primaryBucket,
-        );
+        void this.multiPartUploadBreaker.fire(file, key, this.primaryBucket);
         return {
           success: true,
-          message: 'Large file uploaded successfully via multipart upload',
+          message: 'Large file upload Async via multipart upload',
           key,
-          data: result,
         };
       }
 

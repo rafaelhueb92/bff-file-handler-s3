@@ -27,12 +27,13 @@ variable "container_port" {
 variable "health_check_path" {
   description = "Path for ALB health check"
   type        = string
-  default     = "/health"
+  default     = "/health/check"
 }
 
 variable "ssl_certificate_arn" {
   description = "ARN of SSL certificate"
   type        = string
+  default     = ""
 }
 
 variable "allowed_cidr_blocks" {

@@ -53,13 +53,13 @@ variable "container_port" {
 variable "cpu" {
   description = "CPU units for the task"
   type        = number
-  default     = 256
+  default     = 512
 }
 
 variable "memory" {
   description = "Memory for the task"
   type        = number
-  default     = 512
+  default     = 1024
 }
 
 variable "desired_count" {
@@ -118,3 +118,12 @@ variable "allowed_security_groups" {
   type        = list(string)
 }
 
+variable "main_bucket_arn" {
+  description = "ARN of the first S3 bucket"
+  type        = string
+}
+
+variable "fallback_bucket_arn" {
+  description = "ARN of the second S3 bucket"
+  type        = string
+}

@@ -1,5 +1,3 @@
-# modules/networking/main.tf
-
 data "aws_availability_zones" "available" {
   state = "available"
 }
@@ -15,7 +13,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Public Subnets
 resource "aws_subnet" "public" {
   count                   = length(var.public_subnets)
   vpc_id                  = aws_vpc.main.id
@@ -29,7 +26,6 @@ resource "aws_subnet" "public" {
   }
 }
 
-# Private Subnets
 resource "aws_subnet" "private" {
   count             = length(var.private_subnets)
   vpc_id            = aws_vpc.main.id
@@ -42,7 +38,6 @@ resource "aws_subnet" "private" {
   }
 }
 
-# Internet Gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -52,7 +47,6 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Elastic IP for NAT Gateway
 resource "aws_eip" "nat" {
   count = length(var.private_subnets)
   vpc   = true
@@ -63,7 +57,6 @@ resource "aws_eip" "nat" {
   }
 }
 
-# NAT Gateway
 resource "aws_nat_gateway" "main" {
   count         = length(var.private_subnets)
   allocation_id = aws_eip.nat[count.index].id
@@ -121,7 +114,6 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private[count.index].id
 }
 
-# VPC Flow Logs
 resource "aws_flow_log" "main" {
   iam_role_arn    = aws_iam_role.vpc_flow_log.arn
   log_destination = aws_cloudwatch_log_group.vpc_flow_log.arn
@@ -129,17 +121,17 @@ resource "aws_flow_log" "main" {
   vpc_id          = aws_vpc.main.id
 
   tags = {
-    Name        = "bknd-${var.project_name}-vpc-flow-logs"
+    Name        = "${var.project_name}-vpc-flow-logs"
     Environment = var.environment
   }
 }
 
 resource "aws_cloudwatch_log_group" "vpc_flow_log" {
   name              = "/aws/vpc/bknd-${var.project_name}-flow-logs"
-  retention_in_days = 30
+  retention_in_days = 5
 
   tags = {
-    Name        = "bknd-${var.project_name}-vpc-flow-logs"
+    Name        = "${var.project_name}-vpc-flow-logs"
     Environment = var.environment
   }
 }

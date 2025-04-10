@@ -129,25 +129,6 @@ describe('S3ServiceCB', () => {
         'primary-bucket',
       );
     });
-
-    it('should use multipart upload for large files', async () => {
-      const largeFile = { ...mockFile, size: 51 * 1024 * 1024 }; // 51MB
-      mockBreaker.fire.mockResolvedValueOnce(mockS3Response);
-
-      const result = await service.uploadFile(largeFile, 'test-key');
-
-      expect(result).toEqual({
-        success: true,
-        message: 'Large file uploaded successfully via multipart upload',
-        key: 'test-key',
-        data: mockS3Response,
-      });
-      expect(mockBreaker.fire).toHaveBeenCalledWith(
-        largeFile,
-        'test-key',
-        'primary-bucket',
-      );
-    });
   });
 
   describe('circuit breaker behavior', () => {

@@ -2,6 +2,7 @@ export default () => ({
   s3: {
     primaryBucket: process.env.AWS_S3_BUCKET,
     fallbackBucket: process.env.AWS_S3_BUCKET_BACKUP,
+    env: process.env.ENV || 'DEV',
     retry: {
       attempts: parseInt(process.env.S3_RETRY_ATTEMPTS || '3', 10),
       fallbackAttempts: parseInt(

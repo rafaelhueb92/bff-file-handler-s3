@@ -16,31 +16,12 @@ module "s3" {
 
 module "ecr" { 
   source = "./ecr"
-  dockerfile_path = "../app"
   account_id = local.account_id
   aws_region = var.aws_region
 }
 
-module "public_zone" {
-  source      = "./route53_zone"
-  domain_name = var.domain_name
-  
-  environment = var.environment
-}
-
-module "acm" {
-  source = "./acm"
-
-  domain_name               = var.domain_name
-  subject_alternative_names = ["*.${var.domain_name}"] 
-  route53_zone_id           = module.public_zone.zone_id
-  
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
-  }
-
-   depends_on = [module.public_zone]
+module "kms" {
+  source = "./kms"
 }
 
 module "alb" {
@@ -51,14 +32,9 @@ module "alb" {
   vpc_id              = module.networking.vpc_id
   public_subnet_ids   = module.networking.public_subnet_ids
   container_port      = 3000
-  health_check_path   = "/health"
-  ssl_certificate_arn = module.acm.certificate_arn
+  health_check_path   = "/health/check"
   
-  depends_on = [module.networking,module.acm]
-}
-
-module "kms" {
-  source = "./kms"
+  depends_on = [module.networking]
 }
 
 module "ecs" {
@@ -82,6 +58,8 @@ module "ecs" {
   cb_reset_timeout           = var.cb_reset_timeout
   kms_arn                    = module.kms.arn
   repository_url             = module.ecr.repository_url
+  main_bucket_arn            = module.s3.main_bucket_arn
+  fallback_bucket_arn        = module.s3.fallback_bucket_arn
 
   allowed_security_groups    = [module.alb.alb_security_group_id]
 

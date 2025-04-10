@@ -3,12 +3,12 @@ variable "project_name" {
   type        = string
 }
 
-variable "first_bucket_arn" {
+variable "main_bucket_arn" {
   description = "ARN of the first S3 bucket"
   type        = string
 }
 
-variable "second_bucket_arn" {
+variable "fallback_bucket_arn" {
   description = "ARN of the second S3 bucket"
   type        = string
 }

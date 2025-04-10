@@ -1,0 +1,101 @@
+type: collection.insomnia.rest/5.0
+name: bff-file-handler
+meta:
+  id: wrk_af19c593a8704e35a1053d2c664a1111
+  created: 1743790826418
+  modified: 1743790839929
+collection:
+  - name: local
+    meta:
+      id: fld_9b5381ab4dfd469bbd28f7c4ad46f519
+      created: 1743790904083
+      modified: 1743790904083
+      sortKey: -1743790904083
+    children:
+      - url: "{{ _.base_url }}/files/upload"
+        name: upload
+        meta:
+          id: req_2b711a4a4d0b4a5391d038c6b41b0c1e
+          created: 1743790847539
+          modified: 1744303408272
+          isPrivate: false
+          sortKey: -1743790912985
+        method: POST
+        body:
+          mimeType: multipart/form-data
+          params:
+            - id: pair_5a33e86bcabf4720912cfcaa2191c28e
+              name: file
+              disabled: false
+              type: file
+              fileName: /Users/rafaelhueb/Desktop/projects/altar.io/8317_Age and sex by ethnic
+                group (grouped total responses), for census night population
+                counts, 2006, 2013, and 2018 Censuses (RC, TA, SA2,
+                DHB)/Data8317.csv
+        parameters:
+          - id: pair_86d549e6f4cf4c02a413ebbf53a22cf6
+            disabled: false
+        headers:
+          - name: Content-Type
+            value: multipart/form-data
+          - name: User-Agent
+            value: insomnia/10.3.0
+        authentication:
+          type: basic
+          useISO88591: false
+          disabled: false
+          username: ADMIN
+          password: ADMIN
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/health"
+        name: health
+        meta:
+          id: req_7638e8c6043248859754967a0cb66f79
+          created: 1743813538578
+          modified: 1744303577031
+          isPrivate: false
+          sortKey: -1743770430153.75
+        method: GET
+        parameters:
+          - id: pair_2f911ebeaf06436ab539a85efa1f5812
+            name: file
+            disabled: true
+        headers:
+          - name: User-Agent
+            value: insomnia/10.3.0
+        authentication:
+          type: basic
+          useISO88591: false
+          disabled: false
+          username: ADMIN
+          password: ADMIN
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_6c3df1198283ae8ed6f3c6f9600033d5ddd47da4
+    created: 1743790826438
+    modified: 1743790826438
+environments:
+  name: Base Environment
+  meta:
+    id: env_6c3df1198283ae8ed6f3c6f9600033d5ddd47da4
+    created: 1743790826427
+    modified: 1743790892633
+    isPrivate: false
+  data:
+    base_url: localhost:3000

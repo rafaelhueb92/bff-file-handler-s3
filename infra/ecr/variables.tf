@@ -37,6 +37,7 @@ variable "image_retention_count" {
 variable "dockerfile_path" {
   description = "Path to the directory containing Dockerfile"
   type        = string
+  default     = "../docker"
 }
 
 variable "image_tag" {

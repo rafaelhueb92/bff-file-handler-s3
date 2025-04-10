@@ -9,15 +9,14 @@ module "sg" {
 module "ecs_task_role" {
   source = "./role"
 
-  project_name      = var.project_name
-  environment       = var.environment
-  first_bucket_arn  = var.main_bucket_name
-  second_bucket_arn = var.fallback_bucket_name
-
+  project_name         = var.project_name
+  environment          = var.environment
+  main_bucket_arn      = var.main_bucket_arn
+  fallback_bucket_arn  = var.fallback_bucket_arn
 }
 
 resource "aws_ecs_cluster" "main" {
-  name = "${var.project_name}-cluster"
+  name               = "${var.project_name}-cluster"
 
   setting {
     name  = "containerInsights"
@@ -28,6 +27,12 @@ resource "aws_ecs_cluster" "main" {
     execute_command_configuration {
       kms_key_id = var.kms_arn
       logging    = "OVERRIDE"
+      
+      log_configuration {
+        cloud_watch_encryption_enabled = true
+        cloud_watch_log_group_name     = "${var.project_name}-ecs-cluster"
+      }
+
       }
     }
 
@@ -37,14 +42,23 @@ resource "aws_ecs_task_definition" "app" {
   family                   = "${var.project_name}-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                     = var.cpu
-  memory                  = var.memory
+  cpu                      = var.cpu
+  memory                   = var.memory
+
+  task_role_arn      = module.ecs_task_role.task_role_arn
+  execution_role_arn = module.ecs_task_role.task_execution_role_arn
 
   container_definitions = jsonencode([
     {
-      name  = "${var.project_name}-container"
-      image = "${var.repository_url}:latest"
-      
+      name  = "${var.project_name}-container",
+      image = "${var.repository_url}:latest",
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
       environment = [
         {
           name  = "APP_USER"

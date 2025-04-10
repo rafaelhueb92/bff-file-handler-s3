@@ -17,13 +17,42 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   tags = var.tags
 }
 
-# AWS Managed Policy for ECS Task Execution
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# ECS Task Role (for S3 access)
+resource "aws_iam_policy" "task_execution_custom" {
+  name        = "${var.project_name}-task-execution-custom-policy"
+  description = "Additional permissions for ECS task execution"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "secretsmanager:GetSecretValue",
+          "ssm:GetParameters",
+          "kms:Decrypt"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "task_execution_custom" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = aws_iam_policy.task_execution_custom.arn
+}
+
 resource "aws_iam_role" "ecs_task_role" {
   name = "${var.project_name}-task-role"
 
@@ -43,7 +72,6 @@ resource "aws_iam_role" "ecs_task_role" {
   tags = var.tags
 }
 
-# Custom policy for S3 access
 resource "aws_iam_policy" "s3_access" {
   name        = "${var.project_name}-s3-access-policy"
   description = "Policy for ECS tasks to access S3 buckets"
@@ -60,23 +88,21 @@ resource "aws_iam_policy" "s3_access" {
           "s3:ListBucket"
         ]
         Resource = [
-          "${var.first_bucket_arn}",
-          "${var.first_bucket_arn}/*",
-          "${var.second_bucket_arn}",
-          "${var.second_bucket_arn}/*"
+          "${var.main_bucket_arn}",
+          "${var.main_bucket_arn}/*",
+          "${var.fallback_bucket_arn}",
+          "${var.fallback_bucket_arn}/*"
         ]
       }
     ]
   })
 }
 
-# Attach S3 policy to task role
 resource "aws_iam_role_policy_attachment" "task_s3" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = aws_iam_policy.s3_access.arn
 }
 
-# Additional policies for CloudWatch Logs
 resource "aws_iam_role_policy_attachment" "task_cloudwatch" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"

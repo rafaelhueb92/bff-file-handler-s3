@@ -6,92 +6,215 @@
 
 ## 📦 Overview
 
-**BFF Handler S3** is a backend-for-frontend (BFF) application designed to handle large CSV file uploads to an S3-compatible storage, with advanced features like dynamic rate limiting, circuit breaking, retry logic, and health checks.
+**BFF Handler S3** is a backend-for-frontend (BFF) application designed to handle large CSV file uploads to an S3-compatible storage. It includes advanced features such as:
+
+- **Dynamic Rate Limiting**: Prevents overloading the system by limiting the number of requests.
+- **Circuit Breaking**: Ensures system stability by halting operations when failures exceed a threshold.
+- **Retry Logic**: Automatically retries failed operations to improve reliability.
+- **Health Checks**: Monitors the application's health and ensures uptime.
 
 ---
 
-## 🚀 MVP Version
+## 🚀 CI/CD Pipeline
 
-This version of the project is an **MVP (Minimum Viable Product)**. It includes the basic infrastructure and application setup to test the core functionality of the BFF Handler S3.
+When a **pull request** is created or merged into the `main` branch, the following pipeline is triggered:
 
-### Steps to Run the MVP
-
-1. **Apply the Terraform Infrastructure**
-   Navigate to the `./infra/terraform-mvp` directory and apply the Terraform configuration to set up the required infrastructure.
-
-   ```bash
-   cd ./infra/terraform-mvp
-   terraform init
-   terraform apply
-   ```
-
-   This will create the necessary S3 buckets, IAM roles, and other resources required for the application.
-
-2. **Run the Application**
-   Navigate to the `app` folder and run the application. Before running, make sure to create a `.env` file with the required environment variables.
-
-   ```bash
-   cd ./app
-   touch .env
-   ```
-
-   Add the following properties to the `.env` file:
-
-   ```env
-   APP_USER=ADMIN
-   APP_PASSWORD=ADMIN
-
-   AWS_S3_BUCKET=bff-handler-<account_id>-main
-   AWS_S3_BUCKET_BACKUP=bff-handler-<account_id>-fallback
-
-   S3_RETRY_ATTEMPTS=3
-   S3_FALLBACK_RETRY_ATTEMPTS=2
-
-   S3_TIME_OUT=300000
-   S3_CONN_TIME_OUT=60000
-
-   CB_TIMEOUT=30000
-   CB_THRESHOLD=50
-   CB_RESET_TIMEOUT=10000
-
-   MULTER_PATH_TMP=./tmp
-   ```
-
-   Replace `<account_id>` with your AWS account ID.
-
-3. **Start the Application**
-   Run the application using your preferred method (e.g., `npm start` or `yarn start`).
-
-   ```bash
-   npm install
-   npm start
-   ```
+1. **Run Tests**: Executes all unit and integration tests to ensure the application is functioning as expected.
+2. **Deploy Infrastructure**: Uses Terraform to deploy the infrastructure to the cloud.
+3. **Deploy Application**: Builds and deploys the NestJS application to the target environment.
 
 ---
 
-## 🔮 Features for the Future (Issues)
+## 📂 Project Structure
 
-The following features are planned for future releases:
+### **Folders**
 
-1. **GitHub Actions Workflow**
+- **`app/`**: Contains the NestJS application.
+  - To run the application locally:
+    ```bash
+    npm run start:dev
+    ```
+- **`infra/`**: Contains all infrastructure code managed by Terraform.
 
-   - Automate the deployment process using GitHub Actions.
-   - Include infrastructure provisioning and application deployment in the CI/CD pipeline.
+  - To configure the infrastructure:
+    1. Rename `terraform.tfvars.example` to `terraform.tfvars`.
+    2. Run the following commands:
+       ```bash
+       terraform init
+       terraform apply
+       ```
 
-2. **Containerize the Application**
-
-   - Build a Docker image for the application.
-   - Push the image to Amazon Elastic Container Registry (ECR).
-
-3. **Complete Infrastructure Setup**
-   - Deploy the application on **Amazon ECS** (Fargate) with an **Application Load Balancer (ALB)**.
-   - Integrate the S3 buckets for file storage and replication.
-   - Implement auto-scaling and monitoring for the ECS cluster.
+- **`insomnia/`**: Contains example requests for testing the API. You can import these requests into [Insomnia](https://insomnia.rest/).
 
 ---
 
-## 🛠️ Development Notes
+## 🛠️ Local Development
 
-- This MVP is designed to validate the core functionality of the BFF Handler S3.
-- Future iterations will focus on scalability, security, and automation.
-- This project will be an article.
+For the next version, the application will include support for **LocalStack** in the development environment. When running in `DEV` mode, the application will:
+
+1. Use LocalStack to simulate S3 storage.
+2. Automatically create two buckets for testing purposes.
+
+---
+
+## 📡 API Endpoints
+
+This section explains the available API endpoints and their functionality:
+
+### **1. `/health`**
+
+- **Purpose**: Checks the health of the server and the S3 bucket service.
+- **Authentication**: Requires **Basic Auth**.
+- **Response**: Returns the status of the server and the bucket service,
+- **Example**:
+  ```json
+  {
+    "healthy": true,
+    "healthyService": true,
+    "bucketHealth": true,
+    "cpuRatio": "0.27",
+    "memUsage": "99.22%",
+    "freeSpaceDisk": "20996.54 MB",
+    "uptime": "6314s",
+    "totalMem": "8192.00 MB",
+    "freeMem": "93.14 MB"
+  }
+  ```
+
+---
+
+### **2. `/health/check`**
+
+- **Purpose**: Used for **Application Load Balancer (ALB)** health checks.
+- **Authentication**: **No authentication required**.
+- **Response**: Returns a simple status indicating the server is running, for ALB health check
+- **Example**:
+  ```json
+  true
+  ```
+
+---
+
+### **3. `/files/upload`**
+
+- **Purpose**: Uploads a file to the S3 bucket. If the file size exceeds **50 MB**, the application will perform an **asynchronous multipart upload**.
+  If for some reason, the upload fails, it will try to upload to the fallback bucket, only will be unvailable, if all buckets fails.
+- **Authentication**: Requires **Basic Auth**.
+- **Request Body**:
+  - The request must be a **multipart form-data** with a `file` field containing the file to upload.
+- **Response**:
+  - For small files (< 50 MB): Returns a success message with the file's upload status.
+  - For large files (> 50 MB): Returns a success message indicating the multipart upload has started.
+- **Example**:
+  ```json
+  {
+    "success": true,
+    "message": "Large file upload Async via multipart upload",
+    "key": "1744303868658-Data8317.csv"
+  }
+  ```
+
+---
+
+### **Authentication Details**
+
+- **Endpoints Requiring Basic Auth**:
+
+  - `/health`
+  - `/files/upload`
+
+- **Username and Password**:
+
+  - **Production/CI/CD**: The username and password must be stored as **GitHub Actions Secrets**.
+  - **Local/Development**: Use a `.env` file to define the credentials. Refer to the `.env.example` file for the required format.
+
+  Example `.env` file:
+
+  ```env
+  APP_USER=your-username
+  APP_PASSWORD=your-password
+  ```
+
+---
+
+## 📸 Screenshots
+
+### Project Architecture
+
+<div align="center">
+  <img src="./images/bff-file-handler-s3.drawio.png" alt="Project Architecture" width="600"/>
+</div>
+
+### Successful Short File Upload
+
+<div align="center">
+  <img src="./images/short-image--response-ok.png" alt="Short File Upload Success" width="600"/>
+</div>
+
+### Successful Multipart Upload
+
+<div align="center">
+  <img src="./images/large-file-multipart.png" alt="Multipart Upload Success" width="600"/>
+</div>
+
+<p>The process will continue async.</p>
+
+### Too Many Requests
+
+<div align="center">
+  <img src="./images/too-many-requests.png" alt="Too Many Requests" width="600"/>
+</div>
+
+### Multipart Upload Progression Logs
+
+<div align="center">
+  <img src="./images/progressive-multipart-log.png" alt="Multipart Upload Logs" width="600"/>
+</div>
+
+### Health Endpoint
+
+<div align="center">
+  <img src="./images/health.png" alt="Health" width="600"/>
+</div>
+
+<p> Check the Health of Server and the Buckets
+
+### Health Check Endpoint
+
+<div align="center">
+  <img src="./images/health-check.png" alt="Health Check" width="600"/>
+</div>
+
+<p> Check the Task for ALB communicate
+
+---
+
+## 🧪 Testing
+
+To ensure the application is functioning correctly, the pipeline runs all unit and integration tests. You can also run tests locally:
+
+```bash
+npm run test
+```
+
+---
+
+## 📖 API Documentation
+
+The API endpoints are documented in the `insomnia/` folder. Import the provided file into [Insomnia](https://insomnia.rest/) to test the endpoints.
+
+---
+
+## 🌟 Features
+
+- **Dynamic Rate Limiting**: Prevents abuse by limiting the number of requests per user.
+- **Multipart Uploads**: Handles large file uploads by splitting them into smaller parts.
+- **Retry Logic**: Automatically retries failed uploads.
+- **Health Checks**: Ensures the application is running smoothly.
+
+---
+
+## 🛠️ Future Enhancements
+
+- **LocalStack Integration**: Automatically configure and use LocalStack for local development.
+- **Bucket Management**: Create and manage buckets dynamically in the development environment.

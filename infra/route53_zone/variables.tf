@@ -21,7 +21,6 @@ variable "vpc_config" {
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "production"
 }
 
 variable "tags" {

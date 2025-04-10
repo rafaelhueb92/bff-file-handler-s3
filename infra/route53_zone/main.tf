@@ -2,14 +2,6 @@ resource "aws_route53_zone" "main" {
   name = var.domain_name
   comment = var.comment
 
-  dynamic "vpc" {
-    for_each = var.vpc_config != null ? [var.vpc_config] : []
-    content {
-      vpc_id = vpc.value.vpc_id
-      vpc_region = vpc.value.vpc_region
-    }
-  }
-
   tags = merge(
     {
       "Name" = var.domain_name
@@ -17,4 +9,20 @@ resource "aws_route53_zone" "main" {
     },
     var.tags
   )
+}
+
+resource "aws_route53_zone" "api" {
+  name = "api.${var.domain_name}"
+
+  tags = {
+    sub_domain_prefix = "api"
+  }
+}
+
+resource "aws_route53_record" "api-ns" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "api.${var.domain_name}"
+  type    = "NS"
+  ttl     = "30"
+  records = aws_route53_zone.api.name_servers
 }
