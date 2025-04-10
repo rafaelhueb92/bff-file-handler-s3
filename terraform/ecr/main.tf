@@ -41,7 +41,7 @@ resource "null_resource" "docker_build_push" {
       aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.app_repo.repository_url}
 
       # Build Docker image
-      docker build -t ${aws_ecr_repository.app_repo.repository_url}:latest ../app/Dockerfile
+      docker build -t ${aws_ecr_repository.app_repo.repository_url}:latest ../../app/Dockerfile
 
       # Push Docker image
       docker push ${aws_ecr_repository.app_repo.repository_url}:latest
