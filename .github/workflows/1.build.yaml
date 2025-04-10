@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: List Files in app Directory
-        run: ls -la app
+        run: ls
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
