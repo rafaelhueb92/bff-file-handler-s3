@@ -31,8 +31,8 @@ COPY package*.json ./
 ENV NODE_ENV=production \
     PORT=3000
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
-    CMD curl -f http://localhost:${PORT}/health/check || exit 1
+#HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
+#    CMD curl -f http://localhost:${PORT}/health/check || exit 1
 
 USER nestjs
 
