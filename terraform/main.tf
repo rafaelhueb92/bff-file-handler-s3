@@ -16,8 +16,10 @@ module "s3" {
 
 module "ecr" { 
   source = "./ecr"
-  account_id = local.account_id
-  aws_region = var.aws_region
+  account_id   = local.account_id
+  aws_region   = var.aws_region
+  app_user     = var.app_user
+  app_password = var.app_password
 }
 
 module "kms" {

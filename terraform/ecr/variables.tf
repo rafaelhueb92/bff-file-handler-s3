@@ -53,3 +53,13 @@ variable "account_id" {
 variable "aws_region" {
  type        = string
 }
+
+variable "app_user" {
+  description = "App user"
+  type        = string
+}
+
+variable "app_password" {
+  description = "App password"
+  type        = string
+}
