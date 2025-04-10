@@ -1,7 +1,7 @@
 # BFF Handler S3
 
 <div align="center">
-  <img src="./images/bff-handler-s3-logo.png" alt="BFF Handler S3 Logo" width="300"/>
+  <img src="../images/bff-handler-s3-logo.png" alt="BFF Handler S3 Logo" width="300"/>
 </div>
 
 ## 📦 Overview
