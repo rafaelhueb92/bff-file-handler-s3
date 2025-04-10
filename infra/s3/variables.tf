@@ -19,3 +19,7 @@ variable "versioning_enabled" {
   type        = bool
   default     = true
 }
+
+variable "account_id" {
+  type        = string
+}

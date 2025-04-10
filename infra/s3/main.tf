@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "main" {
-  bucket = "bff-handler-${data.account_id}-main-mvp"
+  bucket = "bff-handler-${var.account_id}-main-mvp"
 
   tags = {
     Name        = "Main Bucket"
@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "main" {
 }
 
 resource "aws_s3_bucket" "fallback" {
-  bucket = "bff-handler-${data.account_id}-fallback-mvp"
+  bucket = "bff-handler-${var.account_id}-fallback-mvp"
 
   tags = {
     Name        = "Fallback Bucket"
@@ -43,7 +43,7 @@ resource "aws_kms_key" "s3" {
         Sid    = "Enable IAM User Permissions"
         Effect = "Allow"
         Principal = {
-          AWS = "arn:aws:iam::${data.account_id}:root"
+          AWS = "arn:aws:iam::${var.account_id}:root"
         }
         Action   = "kms:*"
         Resource = "*"

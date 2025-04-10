@@ -7,3 +7,4 @@ uploads/*
 *.csv
 terraform.tfstate.backup
 .DS_Store
+infra/terraform.tfvars

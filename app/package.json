@@ -28,6 +28,7 @@
     "@types/p-retry": "^3.0.0",
     "async-mutex": "^0.5.0",
     "aws-sdk": "^2.1692.0",
+    "aws-xray-sdk": "^3.10.3",
     "opossum": "^5.0.1",
     "p-retry": "^6.2.1",
     "pino": "^9.6.0",

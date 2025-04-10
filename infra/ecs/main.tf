@@ -1,4 +1,20 @@
-# modules/ecs/main.tf
+module "sg" {
+  source = "./sg"
+
+  project_name = var.project_name
+  vpc_id = var.vpc_id
+  allowed_security_groups = var.allowed_security_groups
+}
+
+module "ecs_task_role" {
+  source = "./role"
+
+  project_name      = var.project_name
+  environment       = var.environment
+  first_bucket_arn  = var.main_bucket_name
+  second_bucket_arn = var.fallback_bucket_name
+
+}
 
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
@@ -8,10 +24,13 @@ resource "aws_ecs_cluster" "main" {
     value = "enabled"
   }
 
-  encryption_config {
-    provider = aws_kms_key.ecs.arn
-    resources = ["SECRETS"]
-  }
+    configuration {
+    execute_command_configuration {
+      kms_key_id = var.kms_arn
+      logging    = "OVERRIDE"
+      }
+    }
+
 }
 
 resource "aws_ecs_task_definition" "app" {
@@ -24,7 +43,7 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = jsonencode([
     {
       name  = "${var.project_name}-container"
-      image = "${aws_ecr_repository.app.repository_url}:latest"
+      image = "${var.repository_url}:latest"
       
       environment = [
         {
@@ -89,7 +108,7 @@ resource "aws_ecs_service" "app" {
 
   network_configuration {
     subnets         = var.private_subnet_ids
-    security_groups = [aws_security_group.ecs_tasks.id]
+    security_groups = [module.sg.ecs_tasks_security_group_id]
   }
 
   load_balancer {

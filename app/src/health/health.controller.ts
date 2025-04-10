@@ -9,4 +9,9 @@ export class HealthController {
   async check() {
     return await this.healService.check();
   }
+
+  @Get('check')
+  health_check() {
+    return true;
+  }
 }

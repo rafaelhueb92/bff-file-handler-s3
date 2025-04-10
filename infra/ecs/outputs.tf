@@ -20,10 +20,5 @@ output "task_definition_arn" {
 
 output "ecs_security_group_id" {
   description = "ID of the ECS security group"
-  value       = aws_security_group.ecs_tasks.id
-}
-
-output "ecs_task_execution_role_arn" {
-  description = "ARN of the ECS task execution role"
-  value       = aws_iam_role.ecs_task_execution_role.arn
+  value       = module.sg.ecs_tasks_security_group_id
 }

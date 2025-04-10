@@ -129,25 +129,23 @@ resource "aws_flow_log" "main" {
   vpc_id          = aws_vpc.main.id
 
   tags = {
-    Name        = "${var.project_name}-vpc-flow-logs"
+    Name        = "bknd-${var.project_name}-vpc-flow-logs"
     Environment = var.environment
   }
 }
 
-# CloudWatch Log Group for VPC Flow Logs
 resource "aws_cloudwatch_log_group" "vpc_flow_log" {
-  name              = "/aws/vpc/${var.project_name}-flow-logs"
+  name              = "/aws/vpc/bknd-${var.project_name}-flow-logs"
   retention_in_days = 30
 
   tags = {
-    Name        = "${var.project_name}-vpc-flow-logs"
+    Name        = "bknd-${var.project_name}-vpc-flow-logs"
     Environment = var.environment
   }
 }
 
-# IAM Role for VPC Flow Logs
 resource "aws_iam_role" "vpc_flow_log" {
-  name = "${var.project_name}-vpc-flow-log-role"
+  name = "bknd-${var.project_name}-vpc-flow-log-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -163,9 +161,8 @@ resource "aws_iam_role" "vpc_flow_log" {
   })
 }
 
-# IAM Role Policy for VPC Flow Logs
 resource "aws_iam_role_policy" "vpc_flow_log" {
-  name = "${var.project_name}-vpc-flow-log-policy"
+  name = "bknd-${var.project_name}-vpc-flow-log-policy"
   role = aws_iam_role.vpc_flow_log.id
 
   policy = jsonencode({

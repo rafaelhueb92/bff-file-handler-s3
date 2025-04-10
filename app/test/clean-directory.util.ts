@@ -5,11 +5,6 @@ import { promisify } from 'util';
 const unlinkAsync = promisify(fs.unlink);
 const readdirAsync = promisify(fs.readdir);
 
-/**
- * Deletes all files in a specified directory
- * @param directoryPath - The path to the directory
- * @returns Promise that resolves when all files are deleted
- */
 export async function cleanDirectory(directoryPath: string): Promise<void> {
   try {
     // Check if directory exists

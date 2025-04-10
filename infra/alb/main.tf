@@ -1,10 +1,15 @@
-# modules/alb/main.tf
+module "sg" {
+  source = "./sg"
+  vpc_id = var.vpc_id
+  project_name = var.project_name
+  environment = var.environment
+}
 
 resource "aws_lb" "main" {
   name               = "${var.project_name}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
+  security_groups    = [module.sg.alb_security_group_id]
   subnets           = var.public_subnet_ids
 
   tags = {
@@ -35,7 +40,7 @@ resource "aws_lb_listener" "https" {
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
-  certificate_arn   = var.certificate_arn
+  certificate_arn   = var.ssl_certificate_arn
 
   default_action {
     type             = "forward"

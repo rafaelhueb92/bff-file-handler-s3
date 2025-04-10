@@ -102,3 +102,19 @@ variable "cb_reset_timeout" {
   type    = number
   default = 10000
 }
+
+variable "kms_arn" {
+  description = "arn of the kms"
+  type        = string
+}
+
+variable "repository_url" {
+  description = "Repository url of the ECR"
+  type        = string
+}
+
+variable "allowed_security_groups" {
+  description = "Allowed SG from ALB"
+  type        = list(string)
+}
+
