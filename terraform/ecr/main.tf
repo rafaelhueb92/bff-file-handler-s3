@@ -35,11 +35,6 @@ resource "null_resource" "docker_build_push" {
     docker_file_hash  = filemd5("${path.module}/../../app/Dockerfile")
   }
 
-  environment = {
-      BASIC_AUTH_USERNAME = var.app_user
-      BASIC_AUTH_PASSWORD = var.app_password
-    }
-
   provisioner "local-exec" {
     command = <<EOF
       aws configure list
