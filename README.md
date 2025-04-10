@@ -28,7 +28,7 @@ When a **pull request** is created or merged into the `main` branch, the followi
 To run the pipeline in GitHub Actions, the following secrets must be configured:
 
 - **`AWS_ACCESS_KEY_ID`**: AWS access key for deploying infrastructure and accessing S3.
-- **`AWS_SECRET_ACCESS_KEY`**: AWS secret key for deploying infrastructure and accessing S3.
+- **`AWS_SECRET_ACCESS_KEY`**: AWS secret key for deploying infrastructure and accessing S3. P.S.: I Could use OPEN-ID, but for demonstration should be enough.
 - **`APP_USER`**: Username for Basic Authentication in the application.
 - **`APP_PASSWORD`**: Password for Basic Authentication in the application.
 
