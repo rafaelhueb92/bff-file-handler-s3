@@ -65,7 +65,7 @@ jobs:
           fi
 
       - name: Create Backend State
-        run: bash scripts/backend-create.sh
+        run: bash backend-create.sh
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
