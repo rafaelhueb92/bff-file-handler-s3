@@ -32,7 +32,7 @@ resource "aws_ecr_lifecycle_policy" "app_repo_policy" {
 resource "null_resource" "docker_build_push" {
   triggers = {
     ecr_repository_url = aws_ecr_repository.app_repo.repository_url
-    docker_file_hash  = filemd5("${path.module}/../../app/Dockerfile") 
+    docker_file_hash  = filemd5("${path.module}/../../app/Dockerfile")
   }
 
   provisioner "local-exec" {
@@ -41,7 +41,10 @@ resource "null_resource" "docker_build_push" {
       aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.app_repo.repository_url}
 
       # Build Docker image
-      docker build -t ${aws_ecr_repository.app_repo.repository_url}:latest ../../app/Dockerfile
+      cd ${path.module}/../../app && docker build -t ${aws_ecr_repository.app_repo.repository_url}:latest .
+
+      # Alternativa usando -f flag:
+      # docker build -t ${aws_ecr_repository.app_repo.repository_url}:latest -f ${path.module}/../../app/Dockerfile ${path.module}/../../app
 
       # Push Docker image
       docker push ${aws_ecr_repository.app_repo.repository_url}:latest
