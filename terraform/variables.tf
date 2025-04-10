@@ -70,9 +70,11 @@ variable "cb_reset_timeout" {
 variable "domain_name" {
   description = "Domain name for the certificate"
   type        = string
+  default     = ""
 }
 
 variable "route53_zone_id" {
   description = "Route 53 hosted zone ID"
   type        = string
+  default     = ""
 }
