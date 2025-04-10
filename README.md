@@ -43,7 +43,7 @@ To run the pipeline in GitHub Actions, the following secrets must be configured:
     ```bash
     npm run start:dev
     ```
-- **`infra/`**: Contains all infrastructure code managed by Terraform.
+- **`terraform/`**: Contains all infrastructure code managed by Terraform.
 
   - To configure the infrastructure:
     1. Rename `terraform.tfvars.example` to `terraform.tfvars`.
