@@ -50,24 +50,18 @@ jobs:
           # Export APP credentials from secrets
           echo "TF_VAR_app_user=${{ secrets.APP_USER }}" >> $GITHUB_ENV
           echo "TF_VAR_app_password=${{ secrets.APP_PASSWORD }}" >> $GITHUB_ENV
-
-      - name: Delete ECR Images (Before Destroy)
-        if: ${{ secrets.DESTROY_FLAG == 'true' }}
+     
+      - name: Read destroy.yaml and check if destroy=true
+        id: check_destroy
         run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          REPOSITORY_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY_NAME}"
-          
-          # Login to ECR
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REPOSITORY_URL
-          
-          # Get and delete images
-          IMAGES=$(aws ecr list-images --repository-name $REPOSITORY_NAME --region $AWS_REGION --query 'imageIds[*]' --output json)
-          if [ "$IMAGES" != "[]" ]; then
-            echo "Deleting images from repository $REPOSITORY_NAME..."
-            aws ecr batch-delete-image --repository-name $REPOSITORY_NAME --region $AWS_REGION --image-ids "$IMAGES"
-            echo "Images deleted successfully."
+          DESTROY=$(grep 'destroy:' ./terraform/destroy.yaml | awk '{print $2}')
+          if [[ "$DESTROY" == "true" ]]; then
+            echo "Destroy triggered"
+            echo "destroy_triggered=true" >> $GITHUB_ENV
+            echo "destroy_triggered=true" >> $GITHUB_OUTPUT
           else
-            echo "No images to delete in repository $REPOSITORY_NAME."
+            echo "destroy_triggered=false" >> $GITHUB_ENV
+            echo "destroy_triggered=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Create Backend State
@@ -94,7 +88,7 @@ jobs:
       - name: Terraform Plan
         working-directory: ./terraform
         run: |
-          if [ "${{ secrets.DESTROY_FLAG }}" == "true" ]; then
+          if [ "${{ env.destroy_triggered }}" == "true" ]; then
             terraform plan -destroy -out=tfplan
           else
             terraform plan -out=tfplan
@@ -107,7 +101,7 @@ jobs:
       - name: Terraform Apply/Destroy
         working-directory: ./terraform
         run: |
-          if [ "${{ secrets.DESTROY_FLAG }}" == "true" ]; then
+          if [ "${{ env.destroy_triggered }}" == "true" ]; then
             terraform destroy --auto-approve
           else
             terraform apply --auto-approve tfplan
