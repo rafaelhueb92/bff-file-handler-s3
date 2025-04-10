@@ -1,6 +1,7 @@
 variable "project_name" {
-  description = "Name of the project"
+  description = "Project name"
   type        = string
+  default     = "bff-handler"
 }
 
 variable "environment" {
