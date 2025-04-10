@@ -32,7 +32,7 @@ resource "aws_ecr_lifecycle_policy" "app_repo_policy" {
 resource "null_resource" "docker_build_push" {
   triggers = {
     ecr_repository_url = aws_ecr_repository.app_repo.repository_url
-    docker_file_hash  = filemd5("${path.module}/Dockerfile")  # Adjust path as needed
+    docker_file_hash  = filemd5("${path.module}/../../app/Dockerfile") 
   }
 
   provisioner "local-exec" {
