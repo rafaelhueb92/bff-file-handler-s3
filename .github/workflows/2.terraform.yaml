@@ -66,6 +66,7 @@ jobs:
 
       - name: Create Backend State
         run: bash backend-create.sh
+        working-directory: ./terraform
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
