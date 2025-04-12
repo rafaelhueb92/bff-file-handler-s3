@@ -1,0 +1,91 @@
+name: Build and Push to ECR
+
+on:
+  workflow_run:
+    workflows: ["Deploy Terraform Infrastructure"]
+    types:
+      - completed
+
+jobs:
+  check-destroy-key:
+    name: Check Destroy Key
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Read destroy.yaml and check if destroy=true
+        id: check_destroy
+        run: |
+          DESTROY=$(grep 'destroy:' ./terraform/destroy.yaml | awk '{print $2}')
+          if [[ "$DESTROY" == "true" ]]; then
+            echo "Destroy triggered"
+            echo "destroy=true" >> $GITHUB_ENV
+            echo "destroy=true" >> $GITHUB_OUTPUT
+          else
+            echo "destroy=false" >> $GITHUB_ENV
+            echo "destroy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Stop Workflow if Destroy is False
+        if: env.destroy != 'true'
+        run: |
+          echo "Destroy key is not true. Stopping workflow."
+          exit 0
+
+  build-and-push:
+    name: Build and Push Docker Image to ECR
+    needs: check-destroy-key
+    runs-on: ubuntu-latest
+    env:
+      ECR_REPOSITORY: your-repository-name
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Parse config.yaml and Set Environment Variables
+        run: |
+          PROJECT_NAME=$(grep 'project:' ./config.yaml | sed -E 's/project:[[:space:]]*["\x27]?([^"\x27]+)["\x27]?/\1/')
+
+          echo "ECR_REPOSITORY=$PROJECT_NAME" >> $GITHUB_ENV
+          echo "TF_VAR_project_name=$PROJECT_NAME" >> $GITHUB_ENV
+          
+          echo "TF_VAR_app_user=${{ secrets.APP_USER }}" >> $GITHUB_ENV
+          echo "TF_VAR_app_password=${{ secrets.APP_PASSWORD }}" >> $GITHUB_ENV
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get AWS Account ID
+        id: get-aws-account
+        run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+          echo "aws_account_id=${AWS_ACCOUNT_ID}" >> $GITHUB_OUTPUT
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, Tag, and Push Docker Image
+        env:
+          REGISTRY: ${{ steps.get-aws-account.outputs.aws_account_id }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+        run: |
+          # Generate timestamp for image tag
+          IMAGE_TAG=$(date +%Y%m%d%H%M%S)-${GITHUB_SHA::7}
+          
+          # Build the Docker image
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG $REGISTRY/$ECR_REPOSITORY:latest
+          
+          # Push the Docker image
+          docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $REGISTRY/$ECR_REPOSITORY:latest
+          
+          # Output the image URI for use in subsequent steps if needed
+          echo "Image URI: $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "image_uri=$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT

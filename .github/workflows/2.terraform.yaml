@@ -1,3 +1,15 @@
+#     - name: Configure AWS Credentials
+#       uses: aws-actions/configure-aws-credentials@v2
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: ${{ env.AWS_REGION }}
+#  env:
+#         TF_VAR_ecr_image_tag: ${{ env.IMAGE_TAG }}
+#         TF_VAR_app_user: ${{ secrets.APP_USER }}
+#         TF_VAR_app_password: ${{ secrets.APP_PASSWORD }}
+
+
 name: Deploy Terraform Infrastructure
 
 on:
@@ -21,8 +33,8 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
-
+        uses: actions/checkout@v2
+      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -30,75 +42,67 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Check Docker Version
-        run: docker --version
-      
-      - name: Read destroy.yaml and check if destroy=true
-        id: check_destroy
-        run: |
-          DESTROY=$(grep 'destroy:' ./terraform/destroy.yaml | awk '{print $2}')
-          if [[ "$DESTROY" == "true" ]]; then
-            echo "Destroy triggered"
-            echo "destroy_triggered=true" >> $GITHUB_ENV
-            echo "destroy_triggered=true" >> $GITHUB_OUTPUT
-          else
-            echo "destroy_triggered=false" >> $GITHUB_ENV
-            echo "destroy_triggered=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Parse config.yaml and Set Environment Variables
-        run: |
-          PROJECT_NAME=$(grep 'project:' ./config.yaml | sed -E 's/project:[[:space:]]*["\x27]?([^"\x27]+)["\x27]?/\1/')
+        run: bash ./bash/backend-create.sh
 
-          echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
-          echo "TF_VAR_project_name=$PROJECT_NAME" >> $GITHUB_ENV
-          
-          echo "TF_VAR_app_user=${{ secrets.APP_USER }}" >> $GITHUB_ENV
-          echo "TF_VAR_app_password=${{ secrets.APP_PASSWORD }}" >> $GITHUB_ENV
-     
-      - name: Create Backend State
-        run: bash backend-create.sh
+      - name: Clear AWS Credentials Cache
+        run: rm -rf ~/.aws/cli/cache
+
+      - name: Configure Terraform backend (state.tf)
+        run: bash ./../bash/backend-create.sh
         working-directory: ./terraform
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v1
         with:
-          terraform_version: "1.5.0"
-
-      - name: Terraform Format
-        working-directory: ./terraform
-        run: terraform fmt -check
-        continue-on-error: true
-
+          terraform_version: 1.4.0
+          terraform_wrapper: false
+          
       - name: Terraform Init
+        run: terraform init -reconfigure
         working-directory: ./terraform
-        run: terraform init
 
-      - name: Terraform Validate
+      - name: Check Destroy Flag
+        id: check-destroy
+        run: bash ./../bash/check-destroy.sh
         working-directory: ./terraform
-        run: terraform validate
 
       - name: Terraform Plan
+        id: terraform-plan
+        run: terraform plan -out=tfplan
         working-directory: ./terraform
-        run: |
-          if [ "${{ env.destroy_triggered }}" == "true" ]; then
-            terraform plan -destroy -out=tfplan
-          else
-            terraform plan -out=tfplan
-          fi
-        env:
-          TF_VAR_ecr_image_tag: ${{ env.IMAGE_TAG }}
-          TF_VAR_app_user: ${{ secrets.APP_USER }}
-          TF_VAR_app_password: ${{ secrets.APP_PASSWORD }}
 
-      - name: Terraform Apply/Destroy
-        working-directory: ./terraform
+      - name: Destroy Resources (if destroy flag is true)
+        if: env.DESTROY == 'true'
         run: |
-          if [ "${{ env.destroy_triggered }}" == "true" ]; then
-            terraform destroy --auto-approve
-          else
-            terraform apply --auto-approve tfplan
-          fi
+          bash ./../bash/delete-images-ecr-repo.sh
+          terraform destroy -auto-approve
+        working-directory: ./terraform
+        continue-on-error: true
+
+      - name: Apply Changes 
+        if: env.DESTROY == 'false'
+        run: terraform apply -auto-approve
+        working-directory: ./terraform
         env:
-          TF_VAR_app_user: ${{ secrets.APP_USER }}
-          TF_VAR_app_password: ${{ secrets.APP_PASSWORD }}
+         TF_VAR_ecr_image_tag: ${{ env.IMAGE_TAG }}
+         TF_VAR_app_user: ${{ secrets.APP_USER }}
+         TF_VAR_app_password: ${{ secrets.APP_PASSWORD }}
+      
+      ## IF FAILS
+      
+      - name: Refresh State to Get Applied Resources (failure)
+        if: failure()  
+        run: terraform apply -refresh-only -auto-approve
+        working-directory: ./terraform
+
+      - name: List Changed Resources (failure)
+        if: failure() 
+        id: list-resources
+        run: bash ./../bash/list-changed-resources.sh
+        working-directory: ./terraform
+
+      - name: Destroy Only Changed Resources (failure)
+        if: failure() 
+        run: bash ./../bash/destroy-changed-resources.sh
+        working-directory: ./terraform
