@@ -11,7 +11,7 @@ jobs:
     name: Check Destroy Key
     runs-on: ubuntu-latest
     outputs:
-        project_name: ${{ env.PROJECT_NAME }}
+        ecr_repo: ${{ env.ECR_REPOSITORY }}
         destroy: ${{ env.destroy }}
     steps:
       - name: Checkout Code
@@ -62,16 +62,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get AWS Account ID
-        id: get-aws-account
-        run: |
-          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
-          echo "aws_account_id=${AWS_ACCOUNT_ID}" >> $GITHUB_OUTPUT
-
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build, Tag, and Push Docker Image
         run: bash ./push-image-docker-ecr.sh
+        env:
+         APP_REPO_ECR: ${{ needs.check-destroy-key.outputs.ecr_repo }}
         working-directory: ./bash
