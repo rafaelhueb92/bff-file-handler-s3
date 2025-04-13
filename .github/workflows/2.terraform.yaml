@@ -45,6 +45,10 @@ jobs:
         with:
           terraform_version: 1.4.0
           terraform_wrapper: false
+
+      - name: Set Config of the Project
+        run: bash ./config-project.sh
+        working-directory: ./bash
           
       - name: Terraform Init
         run: terraform init -reconfigure
@@ -52,8 +56,8 @@ jobs:
 
       - name: Check Destroy Flag
         id: check-destroy
-        run: bash ./../bash/check-destroy.sh
-        working-directory: ./terraform
+        run: bash ./check-destroy.sh
+        working-directory: ./bash
 
       - name: Terraform Plan
         id: terraform-plan
