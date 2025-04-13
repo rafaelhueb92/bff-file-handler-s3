@@ -24,7 +24,16 @@ export class BasicAuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
 
-    const authHeader = request.headers['authorization'];
+    const localAuthHeader =
+      request.headers['authorization'] ||
+      request.headers['Authorization'] ||
+      request.headers['AUTHORIZATION'];
+
+    const albAuthHeader =
+      request.headers['x-amzn-authorization'] ||
+      request.headers['X-Amzn-Authorization'];
+
+    const authHeader = localAuthHeader || albAuthHeader;
 
     if (!authHeader || !authHeader.startsWith('Basic ')) {
       throw new UnauthorizedException(
