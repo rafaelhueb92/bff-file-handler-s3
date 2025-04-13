@@ -48,7 +48,11 @@ describe('RateLimitMiddleware', () => {
   const createMockRequest = (ip: string): Request =>
     ({
       ip,
-    }) as Request;
+      header: {
+        'x-forwarded-for': `${ip},123,444`,
+        'x-real-ip': ip,
+      },
+    }) as unknown as Request;
 
   const mockResponse = {} as Response;
   const mockNext = jest.fn();
