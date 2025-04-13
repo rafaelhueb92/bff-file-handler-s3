@@ -11,6 +11,14 @@ resource "aws_security_group" "ecs_tasks" {
     security_groups = var.allowed_security_groups
   }
 
+  ingress {
+    description     = "Allow traffic from ALB to ECS tasks on port 3000"
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = var.allowed_security_groups
+  }
+
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
