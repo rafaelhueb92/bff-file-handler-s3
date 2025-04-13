@@ -13,7 +13,7 @@ export class RateLimitMiddleware implements NestMiddleware {
   ) {}
 
   private getClientIp(req: Request): string {
-    const xForwardedFor = req.header('x-forwarded-for');
+    const xForwardedFor = req.header['x-forwarded-for'];
 
     if (xForwardedFor) {
       const ips = xForwardedFor.split(',').map((ip) => ip.trim());
@@ -22,7 +22,7 @@ export class RateLimitMiddleware implements NestMiddleware {
 
     // Fallback to other methods
     return (
-      req.header('x-real-ip') || req.socket.remoteAddress || req.ip || 'unknown'
+      req.header['x-real-ip'] || req.socket.remoteAddress || req.ip || 'unknown'
     );
   }
 
