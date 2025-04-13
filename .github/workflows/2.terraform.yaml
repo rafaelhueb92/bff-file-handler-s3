@@ -46,10 +46,16 @@ jobs:
           terraform_version: 1.4.0
           terraform_wrapper: false
 
-      - name: Set Config of the Project
-        run: bash ./config-project.sh
-        working-directory: ./bash
-          
+      - name: Parse config.yaml and Set Environment Variables
+        run: |
+          PROJECT_NAME=$(grep 'project:' ./config.yaml | sed -E 's/project:[[:space:]]*["\x27]?([^"\x27]+)["\x27]?/\1/')
+
+          echo "REPOSITORY_NAME=$PROJECT_NAME" >> $GITHUB_ENV
+          echo "TF_VAR_project_name=$PROJECT_NAME" >> $GITHUB_ENV
+          echo "TF_VAR_app_user=${{ secrets.APP_USER }}" >> $GITHUB_ENV
+          echo "TF_VAR_app_password=${{ secrets.APP_PASSWORD }}" >> $GITHUB_ENV
+
+         
       - name: Terraform Init
         run: terraform init -reconfigure
         working-directory: ./terraform
