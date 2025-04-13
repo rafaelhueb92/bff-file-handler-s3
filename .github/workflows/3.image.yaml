@@ -1,0 +1,77 @@
+name: Build and Push to ECR
+
+on:
+  workflow_run:
+    workflows: ["Deploy Terraform Infrastructure"]
+    types:
+      - completed
+
+jobs:
+  check-destroy-key:
+    name: Check Destroy Key
+    runs-on: ubuntu-latest
+    outputs:
+        project_name: ${{ env.PROJECT_NAME }}
+        destroy: ${{ env.destroy }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Read destroy.yaml and check if destroy=true
+        id: check_destroy
+        run: |
+          DESTROY=$(grep 'destroy:' ./terraform/destroy.yaml | awk '{print $2}')
+          if [[ "$DESTROY" == "true" ]]; then
+            echo "Destroy triggered"
+            echo "destroy=true" >> $GITHUB_ENV
+            echo "destroy=true" >> $GITHUB_OUTPUT
+          else
+            echo "destroy=false" >> $GITHUB_ENV
+            echo "destroy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Parse config.yaml and Set Environment Variables
+        run: |
+          PROJECT_NAME=$(grep 'project:' ./config.yaml | sed -E 's/project:[[:space:]]*["\x27]?([^"\x27]+)["\x27]?/\1/')
+
+          echo "ECR_REPOSITORY=$PROJECT_NAME" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY=$PROJECT_NAME" >> $GITHUB_OUTPUT
+
+      - name: Stop Workflow if Destroy is True
+        if: env.destroy == 'true'
+        working-directory: bash
+        run: |
+          echo "Destroy key is true. Stopping workflow."
+          exit 0
+
+  build-and-push:
+    env:
+      AWS_REGION: us-east-1
+    name: Build and Push Docker Image to ECR
+    needs: check-destroy-key
+    runs-on: ubuntu-latest
+    if: needs.check-destroy-key.outputs.destroy == 'false' 
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get AWS Account ID
+        id: get-aws-account
+        run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+          echo "aws_account_id=${AWS_ACCOUNT_ID}" >> $GITHUB_OUTPUT
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, Tag, and Push Docker Image
+        run: bash ./push-image-docker-ecr.sh
+        working-directory: bash
