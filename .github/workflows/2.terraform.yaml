@@ -70,12 +70,12 @@ jobs:
 
       - name: Apply Changes 
         if: env.DESTROY == 'false'
-        run: terraform apply -auto-approve
-        working-directory: ./terraform
         env:
          TF_VAR_ecr_image_tag: "latest"
          TF_VAR_app_user: ${{ secrets.APP_USER }}
          TF_VAR_app_password: ${{ secrets.APP_PASSWORD }}
+        run: terraform apply -auto-approve
+        working-directory: ./terraform
       
       ## IF FAILS
       
