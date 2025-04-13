@@ -13,22 +13,16 @@ export class RateLimitMiddleware implements NestMiddleware {
   ) {}
 
   private getClientIp(req: Request): string {
-    // Get IP from X-Forwarded-For header (ALB adds this)
     const xForwardedFor = req.header('x-forwarded-for');
 
     if (xForwardedFor) {
-      // Get the first IP in the list (client IP)
       const ips = xForwardedFor.split(',').map((ip) => ip.trim());
       return ips[0];
     }
 
     // Fallback to other methods
     return (
-      req.header('x-real-ip') ||
-      req.connection.remoteAddress ||
-      req.socket.remoteAddress ||
-      req.ip ||
-      'unknown'
+      req.header('x-real-ip') || req.socket.remoteAddress || req.ip || 'unknown'
     );
   }
 
@@ -37,9 +31,9 @@ export class RateLimitMiddleware implements NestMiddleware {
     const now = Date.now();
 
     const lastRequest = this.requestsMap.get(clientIp);
-    this.contextService.set('ip', ip);
+    this.contextService.set('ip', clientIp);
 
-    this.logger.info(`${ip} is trying to request.`);
+    this.logger.info(`${clientIp} is trying to request.`);
 
     if (lastRequest && now - lastRequest < 10_000) {
       console.error('Too Many Requests. Wait 10 seconds.');
@@ -47,7 +41,7 @@ export class RateLimitMiddleware implements NestMiddleware {
       throw new TooManyRequestsException('Too Many Requests. Wait 10 seconds.');
     }
 
-    this.requestsMap.set(ip, now);
+    this.requestsMap.set(clientIp, now);
 
     next();
   }
