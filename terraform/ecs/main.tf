@@ -68,6 +68,10 @@ resource "aws_ecs_task_definition" "app" {
           name  = "APP_PASSWORD"
           value = var.app_password
         },
+         {
+          name  = "ENV"
+          value = "PROD"
+        },
         {
           name  = "AWS_S3_BUCKET"
           value = var.main_bucket_name
