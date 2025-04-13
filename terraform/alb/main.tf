@@ -28,11 +28,12 @@ resource "aws_lb_target_group" "app" {
 
   health_check {
     healthy_threshold   = "3"
-    interval           = "30"
-    protocol           = "HTTP"
-    matcher            = "200"
-    timeout            = "3"
-    path               = var.health_check_path
+    port                = 3000
+    interval            = "30"
+    protocol            = "HTTP"
+    matcher             = "200"
+    timeout             = "3"
+    path                = var.health_check_path
     unhealthy_threshold = "2"
   }
 
