@@ -39,7 +39,7 @@ jobs:
 
       - name: Stop Workflow if Destroy is True
         if: env.destroy == 'true'
-        working-directory: bash
+        working-directory: ./bash
         run: |
           echo "Destroy key is true. Stopping workflow."
           exit 0
@@ -74,4 +74,4 @@ jobs:
 
       - name: Build, Tag, and Push Docker Image
         run: bash ./push-image-docker-ecr.sh
-        working-directory: bash
+        working-directory: ./bash
