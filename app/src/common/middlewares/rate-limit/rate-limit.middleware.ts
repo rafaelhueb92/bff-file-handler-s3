@@ -11,10 +11,32 @@ export class RateLimitMiddleware implements NestMiddleware {
     private readonly logger: LoggerService,
     private readonly contextService: ContextService,
   ) {}
+
+  private getClientIp(req: Request): string {
+    // Get IP from X-Forwarded-For header (ALB adds this)
+    const xForwardedFor = req.header('x-forwarded-for');
+
+    if (xForwardedFor) {
+      // Get the first IP in the list (client IP)
+      const ips = xForwardedFor.split(',').map((ip) => ip.trim());
+      return ips[0];
+    }
+
+    // Fallback to other methods
+    return (
+      req.header('x-real-ip') ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      req.ip ||
+      'unknown'
+    );
+  }
+
   use(req: Request, _: Response, next: () => void) {
-    const ip = req.ip || '';
+    const clientIp = this.getClientIp(req);
     const now = Date.now();
-    const lastRequest = this.requestsMap.get(ip);
+
+    const lastRequest = this.requestsMap.get(clientIp);
     this.contextService.set('ip', ip);
 
     this.logger.info(`${ip} is trying to request.`);
