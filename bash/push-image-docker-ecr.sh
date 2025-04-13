@@ -1,10 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "Checking AWS account ID"
 ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
-AWS_REGION=$(aws configure get region)
-APP_REPO_ECR='bff-file-handler'
-APP_REPO_ECR_URL="$ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/$APP_REPO_ECR"
+APP_REPO_ECR_URL="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_REPO_ECR"
 
 # Ensure variables are set
 if [ -z "$APP_REPO_ECR" ] || [ -z "$APP_REPO_ECR_URL" ]; then

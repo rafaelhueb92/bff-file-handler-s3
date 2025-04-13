@@ -70,4 +70,5 @@ jobs:
         run: bash ./push-image-docker-ecr.sh
         env:
          APP_REPO_ECR: ${{ needs.check-destroy-key.outputs.ecr_repo }}
+         AWS_REGION: "us-east-1"
         working-directory: ./bash
