@@ -224,6 +224,12 @@ The API endpoints are documented in the `insomnia/` folder. Import the provided 
 
 ---
 
+## 💣 To Destroy
+
+To destroy the whole infrastructure in AWS, use the destroy.yaml inside of terraform folder change the value of the key destroy to true and push the modification.
+
+---
+
 ## 🛠️ Future Enhancements
 
 - **LocalStack Integration**: Automatically configure and use LocalStack for local development.
