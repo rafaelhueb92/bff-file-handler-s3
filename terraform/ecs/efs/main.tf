@@ -8,9 +8,9 @@ resource "aws_efs_file_system" "app_storage" {
 }
 
 resource "aws_efs_mount_target" "app_storage_mount" {
-  count           = length(var.private_subnets)
+  count           = length(var.private_subnet_ids)
   file_system_id  = aws_efs_file_system.app_storage.id
-  subnet_id       = var.private_subnets[count.index]
+  subnet_id       = var.private_subnet_ids[count.index]
   security_groups = [aws_security_group.efs_sg.id]
 }
 
