@@ -48,6 +48,7 @@ module "efs" {
     project_name       = var.project_name
     private_subnet_ids = var.private_subnet_ids
     sg_ecs_tasks_id    = module.sg.ecs_tasks_security_group_id
+    vpc_id             = var.vpc_id
 
     depends_on = [ module.sg ]
 }
