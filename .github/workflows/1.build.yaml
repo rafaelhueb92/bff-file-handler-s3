@@ -15,11 +15,14 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
-      - name: List Files in app Directory
-        run: ls
       
+      - name: Check Destroy Flag
+        id: check-destroy
+        run: bash ../bash/check-destroy.sh
+        working-directory: ./terraform
+
       - name: Setup Node.js
+        if: env.DESTROY == 'false'
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
@@ -27,15 +30,19 @@ jobs:
           cache-dependency-path: 'app/package-lock.json'
       
       - name: Install Dependencies
+        if: env.DESTROY == 'false'
         run: npm ci
       
       - name: Run Unit Tests
+        if: env.DESTROY == 'false'
         run: npm run test
       
       - name: Run End-to-End Tests
+        if: env.DESTROY == 'false'
         run: npm run test:e2e
         
       - name: Cache Node Modules
+        if: env.DESTROY == 'false'
         uses: actions/cache@v3
         with:
           path: node_modules
