@@ -73,7 +73,7 @@ jobs:
       - name: Destroy Resources (if destroy flag is true)
         if: env.DESTROY == 'true'
         run: |
-          bash ../bash/delete-images-ecr-repo.sh
+          bash ./../bash/delete-images-ecr-repo.sh
           terraform destroy -auto-approve
         working-directory: ./terraform
         continue-on-error: true
@@ -97,10 +97,10 @@ jobs:
       - name: List Changed Resources (failure)
         if: failure() 
         id: list-resources
-        run: bash ../bash/list-changed-resources.sh
+        run: bash ./../bash/list-changed-resources.sh
         working-directory: ./terraform
 
       - name: Destroy Only Changed Resources (failure)
         if: failure() 
-        run: bash ../bash/destroy-changed-resources.sh
+        run: bash ./../bash/destroy-changed-resources.sh
         working-directory: ./terraform
