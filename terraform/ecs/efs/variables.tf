@@ -11,4 +11,7 @@ variable "private_subnet_ids" {
 variable "sg_ecs_tasks_id" {
   type        = string
 }
+variable "vpc_id" {
+  type        = string
+}
 
