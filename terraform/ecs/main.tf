@@ -47,7 +47,7 @@ module "efs" {
     source = "./efs"
     project_name       = var.project_name
     private_subnet_ids = var.private_subnet_ids
-    sg_ecs_tasks_id    = module.sg,ecs_tasks_security_group_id
+    sg_ecs_tasks_id    = module.sg.ecs_tasks_security_group_id
 
     depends_on = [ module.sg ]
 }
