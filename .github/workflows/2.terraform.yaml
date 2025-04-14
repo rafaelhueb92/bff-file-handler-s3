@@ -73,7 +73,7 @@ jobs:
       - name: Destroy Resources (if destroy flag is true)
         if: env.DESTROY == 'true'
         run: |
-          bash ./../bash/delete-images-ecr-repo.sh
+          bash ./../bash/delete-images-ecr-repo.sh ${{ env.REPOSITORY_NAME }}
           terraform destroy -auto-approve
         working-directory: ./terraform
         continue-on-error: true
