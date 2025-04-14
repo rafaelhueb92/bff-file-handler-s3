@@ -43,7 +43,19 @@ resource "aws_ecs_cluster" "main" {
 
 }
 
+module "efs" {
+    source = "./efs"
+    project_name       = var.project_name
+    private_subnet_ids = var.private_subnet_ids
+    sg_ecs_tasks_id    = module.sg,ecs_tasks_security_group_id
+
+    depends_on = [ module.sg ]
+}
+
 resource "aws_ecs_task_definition" "app" {
+
+  depends_on = [ module.efs ]
+
   family                   = "${var.project_name}-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
@@ -52,6 +64,18 @@ resource "aws_ecs_task_definition" "app" {
 
   task_role_arn      = module.ecs_task_role.task_role_arn
   execution_role_arn = module.ecs_task_role.task_execution_role_arn
+
+  volume {
+    name = "efs-storage"
+    efs_volume_configuration {
+      file_system_id          = module.efs.efs_id 
+      transit_encryption      = "ENABLED"
+      transit_encryption_port = 2049
+      authorization_config {
+        iam = "ENABLED"
+      }
+    }
+  }
 
   container_definitions = jsonencode([
     {
@@ -62,6 +86,13 @@ resource "aws_ecs_task_definition" "app" {
           "containerPort": 3000,
           "hostPort": 3000,
           "protocol": "tcp"
+        }
+      ],
+      mountPoints = [
+        {
+          sourceVolume  = "efs-storage"
+          containerPath = "/usr/src/app/tmp"
+          readOnly      = false
         }
       ],
       logConfiguration = {
@@ -123,7 +154,7 @@ resource "aws_ecs_task_definition" "app" {
         },
         {
           name  = "MULTER_PATH_TMP"
-          value = "./tmp"
+          value = "/usr/src/app/tmp"
         }
       ]
     }
@@ -148,3 +179,4 @@ resource "aws_ecs_service" "app" {
     container_port   = var.container_port
   }
 }
+
