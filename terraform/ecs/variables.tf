@@ -127,3 +127,7 @@ variable "fallback_bucket_arn" {
   description = "ARN of the second S3 bucket"
   type        = string
 }
+
+variable "aws_region" {
+  type        = string
+}

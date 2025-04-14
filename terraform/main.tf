@@ -62,6 +62,7 @@ module "ecs" {
   repository_url             = module.ecr.repository_url
   main_bucket_arn            = module.s3.main_bucket_arn
   fallback_bucket_arn        = module.s3.fallback_bucket_arn
+  aws_region                 = var. aws_region
 
   allowed_security_groups    = [module.alb.alb_security_group_id]
 
