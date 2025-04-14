@@ -6,6 +6,11 @@ module "sg" {
   allowed_security_groups = var.allowed_security_groups
 }
 
+resource "aws_cloudwatch_log_group" "app_logs" {
+  name              = "/ecs/${var.project_name}/app"
+  retention_in_days = 3 
+}
+
 module "ecs_task_role" {
   source = "./role"
 
@@ -59,6 +64,14 @@ resource "aws_ecs_task_definition" "app" {
           "protocol": "tcp"
         }
       ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.app_logs.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "app"
+        }
+      },
       environment = [
         {
           name  = "APP_USER"
